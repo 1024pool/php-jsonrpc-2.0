@@ -1,6 +1,8 @@
 <?php
 
-class JSONRPC_Exception extends Exception {
+namespace JSONRPC;
+
+class Server_Exception extends \Exception {
 
     const STATUS_PARSE_ERROR = -32700;
     const STATUS_INVALID_REQUEST = -32600;
@@ -28,7 +30,7 @@ class JSONRPC_Exception extends Exception {
     }
 }
 
-class JSONRPC {
+class Server {
 
     //request的json数据
     public $request;
@@ -82,7 +84,7 @@ class JSONRPC {
                 $this->method = $_functions[$this->method];
             }
             else {
-                throw new JSONRPC_Exception(JSONRPC_Exception::STATUS_METHOD_NOT_FOUNT);
+                throw new \JSONRPC\Server_Exception(\JSONRPC\Server_Exception::STATUS_METHOD_NOT_FOUNT);
             }
 
             $method = $this->method;
@@ -91,7 +93,7 @@ class JSONRPC {
             if ((is_string($method) && !function_exists($method))
                     ||
                     (is_array($method) && !method_exists($method[0], $method[1]))
-               ) throw new JSONRPC_Exception(JSONRPC_Exception::STATUS_METHOD_NOT_FOUNT);
+               ) throw new \JSONRPC\Server_Exception(\JSONRPC\Server_Exception::STATUS_METHOD_NOT_FOUNT);
 
             //调用，获取结果
             $this->result = call_user_func_array($method, $params);
@@ -100,7 +102,7 @@ class JSONRPC {
             $this->send_body();
 
         }
-        catch(JSONRPC_Exception $e) {
+        catch(\JSONRPC\Server_Exception $e) {
 
             //抓到异常发送错误
             $this->send_error($e->getCode(), $e->getMessage());
@@ -192,18 +194,3 @@ class JSONRPC {
         session_write_close();
     }
 }
-
-function hello() {
-    return 'hello';
-}
-
-//初始化jsonrpc对象
-$jsonrpc = new JSONRPC;
-
-//进行调用方法并绑定，左侧调用方法，右侧为实际调用方法
-//支持绑定到对象方法
-$jsonrpc->expose('trim');
-$jsonrpc->expose('hello', 'hello');
-
-//执行
-$jsonrpc->run();

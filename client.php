@@ -1,24 +1,10 @@
 <?php
 
-class Cookie_File {
+namespace JSONRPC;
 
-    //path 用于存储cookie文件的路径
-    public $path;
+class Client_Exception extends \Exception {}
 
-    function __construct() {
-        //初始化cookie文件
-        $this->path = tempnam(sys_get_temp_dir(), 'rpc.cookie.');
-        @touch($this->path);
-    }
-
-    function __destruct() {
-        unlink($this->path);
-    }
-}
-
-class JSONRPC_Exception extends Exception {}
-
-class JSONRPC {
+class Client {
 
     public $url, $cookie_file;
     private $_id;
@@ -26,7 +12,7 @@ class JSONRPC {
     public function __construct($url) {
         $this->url = $url;
         $this->_id = uniqid();
-        $this->cookie_file = new Cookie_File;
+        $this->cookie_file = new \Cookie_File;
     }
 
     public function __call($method, $params = array()) {
@@ -60,28 +46,17 @@ class JSONRPC {
         curl_close($ch);
 
         if (!isset($result['jsonrpc']) || $result['jsonrpc'] != '2.0') {
-            throw new JSONRPC_Exception('Wrong Response ! It`s Not JSONRPC2.0');
+            throw new \JSONRPC\Client_Exception('Wrong Response ! It`s Not JSONRPC2.0');
         }
 
         if ($result['id'] != $this->_id) {
-            throw new JSONRPC_Exception('Wrong Response Id');
+            throw new \JSONRPC\Client_Exception('Wrong Response Id');
         }
 
         if (isset($result['error'])) {
-            throw new JSONRPC_Exception($result['error']['message']);
+            throw new \JSONRPC\Client_Exception($result['error']['message']);
         }
 
         return $result['result'];
     }
-}
-
-$rpc = new JSONRPC('http://rpc/server.php');
-
-try {
-    echo $rpc->hello(). "\n";
-    echo $rpc->trim("\t\n hello "). "\n";
-    echo $rpc->create_exception();
-}
-catch(JSONRPC_Exception $e) {
-    echo $e->getMessage();
 }
